@@ -53,10 +53,17 @@ public class Servidor {
 
                     String[] filtros = datosDesencriptados.split("\\|", 2);
                     String fechaFiltro = filtros[0];
-                    String horaFiltro = filtros[1];
+                    String horaFiltro = filtros.length > 1 ? filtros[1] : "00:00";
 
+                    List<DatoSensor> datos;
 
-                    List<DatoSensor> datos = dbManager.consultarFiltrados(fechaFiltro, horaFiltro);
+                    if (fechaFiltro.equals("GENERAL")) {
+                        System.out.println("   -> CONSULTA: Solicitando historial COMPLETO.");
+                        datos = dbManager.consultarTodo();
+                    } else {
+                        System.out.println("   -> CONSULTA: Filtrando por Fecha: " + fechaFiltro + ", Hora: " + horaFiltro);
+                        datos = dbManager.consultarFiltrados(fechaFiltro, horaFiltro);
+                    }
 
 
                     StringBuilder sb = new StringBuilder();

@@ -38,7 +38,7 @@ public class DatabaseManager {
             System.err.println("   Asegúrese de que el driver 'sqlite-jdbc' esté en el pom.xml o librerías.");
         }
     }
-    // =========================================================
+
 
     public void guardarDato(int x, int y, int z) {
         String sql = "INSERT INTO datos_sensor(x, y, z, fecha_de_captura, hora_de_captura) VALUES(?, ?, ?, ?, ?)";
@@ -64,7 +64,7 @@ public class DatabaseManager {
     public List<DatoSensor> consultarFiltrados(String fechaFiltro, String horaFiltro) {
         List<DatoSensor> datos = new ArrayList<>();
 
-        String sql = "SELECT id, x, y, z, fecha_de_captura, hora_de_captura FROM datos_sensor WHERE fecha_de_captura = ? AND hora_de_captura >= ?";
+        String sql = "SELECT id, x, y, z, fecha_de_captura, hora_de_captura FROM datos_sensor WHERE fecha_de_captura = ? AND hora_de_captura >= ? ORDER BY fecha_de_captura, hora_de_captura ASC";
 
         try (Connection conn = DriverManager.getConnection(URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -86,6 +86,31 @@ public class DatabaseManager {
             }
         } catch (SQLException e) {
             System.err.println("Error al consultar datos filtrados: " + e.getMessage());
+        }
+        return datos;
+    }
+
+    public List<DatoSensor> consultarTodo() {
+        List<DatoSensor> datos = new ArrayList<>();
+
+        String sql = "SELECT id, x, y, z, fecha_de_captura, hora_de_captura FROM datos_sensor ORDER BY fecha_de_captura, hora_de_captura ASC";
+
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                datos.add(new DatoSensor(
+                        rs.getInt("id"),
+                        rs.getInt("x"),
+                        rs.getInt("y"),
+                        rs.getInt("z"),
+                        rs.getString("fecha_de_captura"),
+                        rs.getString("hora_de_captura")
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al consultar todo el historial: " + e.getMessage());
         }
         return datos;
     }

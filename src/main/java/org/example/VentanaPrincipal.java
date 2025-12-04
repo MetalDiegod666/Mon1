@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Calendar;
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import javax.swing.SwingWorker; // Asegúrate de tener este import
 
 class VentanaPrincipal extends JFrame {
 
@@ -28,7 +29,6 @@ class VentanaPrincipal extends JFrame {
     private JComboBox<String> comboPuertos;
     private JButton btnIniciarDetener;
 
-    // VARIABLES PARA LOS NUEVOS FILTROS
     private JSpinner spinnerFecha;
     private JSpinner spinnerHora;
 
@@ -109,7 +109,7 @@ class VentanaPrincipal extends JFrame {
         JButton btnHistorico = crearBotonBarra("Histórico", DORADO);
         btnHistorico.addActionListener(e -> {
             cardLayout.show(panelPrincipal, "historico");
-            cargarHistorico();
+            cargarHistorico(false);
         });
 
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
@@ -201,12 +201,15 @@ class VentanaPrincipal extends JFrame {
         panelFiltros.add(new JLabel("Hora (Desde): "));
         panelFiltros.add(spinnerHora);
 
+        JButton btnCargar = crearBotonBarra("Filtrar por Fecha", DORADO);
+        btnCargar.addActionListener(e -> cargarHistorico(false));
 
-        JButton btnCargar = crearBotonBarra("Recargar Histórico", DORADO);
-        btnCargar.addActionListener(e -> cargarHistorico());
+        JButton btnVerTodo = crearBotonBarra("Ver Todo el Historial", AZUL);
+        btnVerTodo.addActionListener(e -> cargarHistorico(true));
 
         barraBotones.add(volver);
         barraBotones.add(btnCargar);
+        barraBotones.add(btnVerTodo);
 
         barraSuperior.add(barraBotones, BorderLayout.NORTH);
         barraSuperior.add(panelFiltros, BorderLayout.CENTER);
@@ -280,22 +283,30 @@ class VentanaPrincipal extends JFrame {
         btnIniciarDetener.setText("Iniciar");
     }
 
-    private void cargarHistorico() {
+    private void cargarHistorico(boolean modoGeneral) {
         chartHistorico.setChart(createEmptyChart("Cargando datos históricos... Por favor espere."));
-
 
         SimpleDateFormat formatFecha = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat formatHora = new SimpleDateFormat("HH:mm");
 
-        String fechaFiltro = formatFecha.format((Date) spinnerFecha.getValue());
-        String horaFiltro = formatHora.format((Date) spinnerHora.getValue());
+        String fechaFiltro;
+        String horaFiltro = "00:00";
+
+        if (modoGeneral) {
+            fechaFiltro = "GENERAL";
+        } else {
+            fechaFiltro = formatFecha.format((Date) spinnerFecha.getValue());
+            horaFiltro = formatHora.format((Date) spinnerHora.getValue());
+        }
+
+        String finalFecha = fechaFiltro;
+        String finalHora = horaFiltro;
 
         new SwingWorker<List<DatoSensor>, Void>() {
 
             @Override
             protected List<DatoSensor> doInBackground() throws Exception {
-
-                return clienteSocket.consultarDatos(fechaFiltro, horaFiltro);
+                return clienteSocket.consultarDatos(finalFecha, finalHora);
             }
 
             @Override
@@ -304,7 +315,8 @@ class VentanaPrincipal extends JFrame {
                     List<DatoSensor> datos = get();
 
                     if (datos.isEmpty()) {
-                        chartHistorico.setChart(createEmptyChart("No se encontraron datos históricos con esos filtros."));
+                        String mensaje = modoGeneral ? "No se encontraron datos en el historial completo." : "No se encontraron datos históricos con esos filtros.";
+                        chartHistorico.setChart(createEmptyChart(mensaje));
                         return;
                     }
 
